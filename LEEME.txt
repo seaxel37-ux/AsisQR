@@ -1,0 +1,20 @@
+ASISQR - DEMOSTRACION WEB INSTALABLE (PWA)
+
+INCLUYE
+- Los 15 grupos: 101-105, 201-205 y 301-305.
+- Alta manual de alumnos de prueba.
+- Generación de QR por alumno.
+- Registro de presente/retardo mediante QR o manual.
+- Consulta por grupo y exportación CSV.
+- Archivos básicos para instalar la demostración como PWA en Android y iPhone.
+
+IMPORTANTE: ALCANCE ACTUAL
+Esta versión sigue siendo una DEMOSTRACIÓN. Los registros se guardan en el almacenamiento local del navegador y NO se sincronizan entre celulares o computadoras. No incluye todavía autenticación segura por roles, padrón escolar central ni base de datos compartida. No debe usarse para controlar la asistencia real de la escuela.
+
+PUBLICACION E INSTALACION
+1. Publicar la carpeta AsisQR en un servicio de hosting HTTPS.
+2. Abrir la dirección HTTPS desde Chrome en Android o Safari en iPhone.
+3. Android: menú del navegador > Instalar app o Añadir a pantalla de inicio.
+4. iPhone: botón Compartir > Añadir a pantalla de inicio.
+
+La cámara QR requiere HTTPS, permiso de cámara y conexión para cargar las librerías externas.

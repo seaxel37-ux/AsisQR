@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#123b8b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/asisqr.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/asisqr-180.png">
+<title>AsisQR | Pase de lista digital</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://unpkg.com/html5-qrcode"></script>
+<style>
+:root{--blue:#155eef;--navy:#14213d;--bg:#f4f7fb;--ink:#172033;--muted:#667085;--line:#e5eaf2;--green:#067647;--red:#b42318;--amber:#b54708}
+*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:linear-gradient(120deg,#123b8b,#1769d2);color:white;padding:24px max(20px,calc((100% - 1100px)/2));}
+header h1{margin:0;font-size:28px}header p{margin:7px 0 0;color:#dce8ff}
+main{max-width:1100px;margin:24px auto;padding:0 18px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}
+.stat,.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 4px 14px #15284a0a}
+.stat small{color:var(--muted)}.stat strong{display:block;font-size:30px;margin-top:7px}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:16px}.panel h2{font-size:18px;margin:0 0 15px}
+label{display:block;font-size:13px;font-weight:bold;margin:12px 0 6px}
+input,select{width:100%;padding:11px;border:1px solid #cfd7e4;border-radius:9px;font-size:14px;background:white}
+button{border:0;border-radius:9px;padding:11px 14px;font-weight:bold;cursor:pointer;background:var(--blue);color:white}
+button:hover{filter:brightness(.95)}button.secondary{background:#eef4ff;color:#174ea6}button.danger{background:#fff0ef;color:var(--red)}
+button:disabled{opacity:.5;cursor:not-allowed}.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:15px}.tabs button{background:#e9eef7;color:#344054}.tabs button.active{background:var(--blue);color:white}
+table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:11px 8px;border-bottom:1px solid var(--line)}th{color:var(--muted);font-size:12px}
+.pill{display:inline-block;padding:4px 8px;border-radius:20px;font-size:12px;font-weight:bold;background:#f2f4f7}.present{background:#dcfae6;color:var(--green)}.absent{background:#fee4e2;color:var(--red)}.late{background:#fef0c7;color:var(--amber)}
+.hidden{display:none!important}.empty{padding:25px;text-align:center;color:var(--muted)}
+#qrBox{display:flex;justify-content:center;margin:14px 0}#qrBox img{margin:auto}
+#reader{max-width:420px;margin:12px auto}
+.note{font-size:12px;color:var(--muted);line-height:1.5}.notice{padding:10px;border-radius:9px;background:#eff8ff;color:#175cd3;font-size:13px;margin-top:12px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.stats{gap:8px}.stat{padding:12px}.stat strong{font-size:24px}header h1{font-size:23px}table{font-size:12px}th,td{padding:8px 5px}}
+</style>
+</head>
+<body>
+<header><h1>📘 AsisQR</h1><p>Sistema digital de control de asistencia escolar</p></header>
+<main>
+<section class="stats">
+ <div class="stat"><small>Alumnos registrados</small><strong id="total">0</strong></div>
+ <div class="stat"><small>Presentes hoy</small><strong id="presentes">0</strong></div>
+ <div class="stat"><small>Faltas hoy</small><strong id="faltas">0</strong></div>
+</section>
+<section class="panel" style="margin-bottom:16px">
+ <h2>Consulta por grupo</h2>
+ <label for="filterGroup">Selecciona el salón que deseas consultar</label>
+ <select id="filterGroup">
+  <option value="Todos">Todos los grupos</option>
+  <optgroup label="Primer grado"><option>105</option><option>104</option><option>103</option><option>102</option><option>101</option></optgroup>
+  <optgroup label="Segundo grado"><option>205</option><option>204</option><option>203</option><option>202</option><option>201</option></optgroup>
+  <optgroup label="Tercer grado"><option>305</option><option>304</option><option>303</option><option>302</option><option>301</option></optgroup>
+ </select>
+ <div class="stats" style="margin:14px 0 0">
+  <div class="stat"><small>Alumnos del grupo</small><strong id="groupTotal">0</strong></div>
+  <div class="stat"><small>Presentes del grupo</small><strong id="groupPresent">0</strong></div>
+  <div class="stat"><small>Faltas del grupo</small><strong id="groupAbsent">0</strong></div>
+ </div>
+</section>
+<div class="layout">
+ <aside class="panel">
+  <h2>Registrar alumno</h2>
+  <form id="studentForm">
+   <label for="name">Nombre completo</label><input id="name" required maxlength="70" placeholder="Ej. María López Pérez">
+   <label for="group">Grupo</label>
+   <select id="group" required>
+    <option value="">Selecciona un grupo</option>
+    <optgroup label="Primer grado"><option>105</option><option>104</option><option>103</option><option>102</option><option>101</option></optgroup>
+    <optgroup label="Segundo grado"><option>205</option><option>204</option><option>203</option><option>202</option><option>201</option></optgroup>
+    <optgroup label="Tercer grado"><option>305</option><option>304</option><option>303</option><option>302</option><option>301</option></optgroup>
+   </select>
+   <button type="submit" style="width:100%;margin-top:15px">+ Agregar alumno</button>
+  </form>
+  <div class="notice">Cada alumno recibe un QR único. Puedes imprimirlo o mostrarlo desde la pantalla.</div>
+  <hr style="border:0;border-top:1px solid var(--line);margin:20px 0">
+  <h2>Registrar asistencia</h2>
+  <div id="reader"></div>
+  <div class="actions">
+   <button id="startScan" type="button">Activar cámara</button>
+   <button id="stopScan" type="button" class="secondary" disabled>Detener</button>
+  </div>
+  <label for="manualCode">O escribe/pega el código del QR</label>
+  <input id="manualCode" placeholder="Ej. ASISQR-123456">
+  <button id="manualBtn" type="button" class="secondary" style="width:100%;margin-top:8px">Registrar con código</button>
+  <p class="note">La cámara requiere permiso del navegador y normalmente funciona al abrir el proyecto desde localhost o una página HTTPS.</p>
+ </aside>
+ <section class="panel">
+  <div class="tabs">
+   <button class="active" data-tab="students">Alumnos</button>
+   <button data-tab="attendance">Asistencia de hoy</button>
+   <button data-tab="report">Reporte</button>
+  </div>
+  <div id="students">
+   <h2>Lista de alumnos</h2>
+   <div id="studentTable"></div>
+  </div>
+  <div id="attendance" class="hidden">
+   <h2>Control de asistencia</h2>
+   <div class="actions" style="margin:0 0 12px">
+    <button id="markAll" class="secondary" type="button">Marcar faltas a pendientes</button>
+    <button id="exportBtn" class="secondary" type="button">Exportar CSV</button>
+   </div>
+   <div id="attendanceTable"></div>
+  </div>
+  <div id="report" class="hidden">
+   <h2>Reporte general</h2><div id="reportContent"></div>
+  </div>
+ </section>
+</div>
+<p class="note" style="text-align:center;margin:18px 0">AsisQR · Proyecto escolar de Técnico en Informática · Los datos se guardan en este navegador.</p>
+</main>
+<div id="modal" class="hidden" style="position:fixed;inset:0;background:#10182899;display:grid;place-items:center;padding:18px">
+ <div class="panel" style="width:min(360px,100%);text-align:center">
+  <h2 id="qrName">Código QR</h2><div id="qrBox"></div><p id="qrCode" class="note"></p>
+  <div class="actions" style="justify-content:center"><button id="printQr" type="button">Imprimir QR</button><button id="closeModal" type="button" class="secondary">Cerrar</button></div>
+ </div>
+</div>
+<script>
+const KEY='asisqr_students_v1';
+let students=JSON.parse(localStorage.getItem(KEY)||'[]');
+let scanner=null, activeStudent=null;
+const today=()=>new Date().toISOString().slice(0,10);
+const save=()=>localStorage.setItem(KEY,JSON.stringify(students));
+const code=()=> 'ASISQR-'+Math.random().toString(36).slice(2,8).toUpperCase();
+const escapeHtml=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function statusFor(s){return (s.records||{})[today()]||'Pendiente'}
+function stats(){
+ document.getElementById('total').textContent=students.length;
+ document.getElementById('presentes').textContent=students.filter(s=>['Presente','Retardo'].includes(statusFor(s))).length;
+ document.getElementById('faltas').textContent=students.filter(s=>statusFor(s)==='Falta').length;
+}
+function render(){
+ const filter=document.getElementById('filterGroup')?.value||'Todos';
+ const visible=filter==='Todos'?students:students.filter(s=>s.group===filter);
+ stats();
+ document.getElementById('groupTotal').textContent=visible.length;
+ document.getElementById('groupPresent').textContent=visible.filter(s=>['Presente','Retardo'].includes(statusFor(s))).length;
+ document.getElementById('groupAbsent').textContent=visible.filter(s=>statusFor(s)==='Falta').length;
+ const host=document.getElementById('studentTable');
+ if(!visible.length){host.innerHTML='<div class="empty">No hay alumnos registrados en este grupo.</div>';}
+ else host.innerHTML='<table><thead><tr><th>Alumno</th><th>Grupo</th><th>QR</th></tr></thead><tbody>'+visible.map(s=>`<tr><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.group)}</td><td><button class="secondary" onclick="showQR('${s.id}')">Ver QR</button></td></tr>`).join('')+'</tbody></table>';
+ const ah=document.getElementById('attendanceTable');
+ if(!visible.length) ah.innerHTML='<div class="empty">No hay alumnos registrados en este grupo.</div>';
+ else ah.innerHTML='<table><thead><tr><th>Alumno</th><th>Grupo</th><th>Estado</th><th>Acción</th></tr></thead><tbody>'+visible.map(s=>`<tr><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.group)}</td><td><span class="pill ${statusFor(s)==='Presente'?'present':statusFor(s)==='Falta'?'absent':statusFor(s)==='Retardo'?'late':''}">${statusFor(s)}</span></td><td><button class="secondary" onclick="setStatus('${s.id}','Presente')">Presente</button> <button class="secondary" onclick="setStatus('${s.id}','Retardo')">Retardo</button></td></tr>`).join('')+'</tbody></table>';
+ const present=visible.filter(s=>['Presente','Retardo'].includes(statusFor(s))).length;
+ document.getElementById('reportContent').innerHTML=`<p><b>Fecha:</b> ${today()}</p><p><b>Grupo consultado:</b> ${filter==='Todos'?'Todos los grupos':filter}</p><p><b>Total de alumnos:</b> ${visible.length}</p><p><b>Asistencias:</b> ${present}</p><p><b>Faltas:</b> ${visible.filter(s=>statusFor(s)==='Falta').length}</p><p><b>Pendientes:</b> ${visible.filter(s=>statusFor(s)==='Pendiente').length}</p><p class="note">El reporte corresponde al grupo seleccionado y a los registros guardados en este navegador.</p>`;
+}
+document.getElementById('studentForm').addEventListener('submit',e=>{
+ e.preventDefault();const name=document.getElementById('name').value.trim(),group=document.getElementById('group').value.trim();
+ if(!name||!group)return;
+ students.push({id:code(),name,group,records:{}});save();e.target.reset();render();
+});
+window.setStatus=(id,status)=>{const s=students.find(x=>x.id===id);if(!s)return;s.records=s.records||{};s.records[today()]=status;save();render();};
+window.showQR=id=>{
+ const s=students.find(x=>x.id===id);if(!s)return;activeStudent=s;
+ document.getElementById('qrName').textContent=s.name;document.getElementById('qrCode').textContent=s.id;
+ const box=document.getElementById('qrBox');box.innerHTML='';
+ if(window.QRCode)new QRCode(box,{text:s.id,width:190,height:190});
+ else box.textContent='No se pudo cargar el generador QR. Revisa tu conexión a internet.';
+ document.getElementById('modal').classList.remove('hidden');
+};
+document.getElementById('closeModal').onclick=()=>document.getElementById('modal').classList.add('hidden');
+document.getElementById('printQr').onclick=()=>window.print();
+function registerCode(value){
+ const s=students.find(x=>x.id===value.trim().toUpperCase());
+ if(!s){alert('No se encontró ese código. Verifica el QR o registra primero al alumno.');return;}
+ setStatus(s.id,'Presente');alert('Asistencia registrada: '+s.name);
+}
+document.getElementById('manualBtn').onclick=()=>registerCode(document.getElementById('manualCode').value);
+document.getElementById('manualCode').addEventListener('keydown',e=>{if(e.key==='Enter')registerCode(e.target.value)});
+document.getElementById('startScan').onclick=async()=>{
+ if(!window.Html5Qrcode){alert('No se pudo cargar el lector QR. Revisa tu conexión a internet.');return;}
+ try{
+  scanner=new Html5Qrcode('reader');
+  await scanner.start({facingMode:'environment'},{fps:10,qrbox:{width:220,height:220}},decoded=>{registerCode(decoded);scanner.stop().catch(()=>{});document.getElementById('stopScan').disabled=true;});
+  document.getElementById('stopScan').disabled=false;
+ }catch(err){alert('No se pudo activar la cámara. Da permiso al navegador y abre la página desde localhost o HTTPS.');}
+};
+document.getElementById('stopScan').onclick=()=>{if(scanner)scanner.stop().then(()=>document.getElementById('stopScan').disabled=true).catch(()=>{});};
+document.getElementById('markAll').onclick=()=>{if(!confirm('¿Marcar como falta a todos los alumnos que siguen pendientes hoy?'))return;const f=document.getElementById('filterGroup').value;students.filter(s=>f==='Todos'||s.group===f).forEach(s=>{s.records=s.records||{};if(!s.records[today()])s.records[today()]='Falta';});save();render();};
+document.getElementById('exportBtn').onclick=()=>{
+ const f=document.getElementById('filterGroup').value;const selected=students.filter(s=>f==='Todos'||s.group===f);const rows=[['Nombre','Grupo','Fecha','Estado'],...selected.map(s=>[s.name,s.group,today(),statusFor(s)])];
+ const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+ const blob=new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8;'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='reporte-asisqr-'+today()+'.csv';a.click();URL.revokeObjectURL(url);
+};
+document.getElementById('filterGroup').addEventListener('change',render);
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{
+ document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+ ['students','attendance','report'].forEach(id=>document.getElementById(id).classList.toggle('hidden',id!==b.dataset.tab));
+});
+render();
+</script>
+<style>
+@media print{body *{visibility:hidden}#modal,#modal *{visibility:visible}#modal{position:absolute;inset:0;background:white!important}#modal .panel{box-shadow:none;border:0}}
+</style>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}
+</script>
+</body></html>
